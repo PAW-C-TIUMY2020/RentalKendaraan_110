@@ -4,9 +4,9 @@
     ViewData["Title"] = "Delete";
 }
 
-<h2>Delete</h2>
+<h2>Hapus Data Peminjaman</h2>
 
-<h3>Are you sure you want to delete this?</h3>
+<h3>Apakah Anda Yakin Ingin Mengubah Data Ini?</h3>
 <div>
     <h4>Peminjaman</h4>
     <hr />
@@ -43,9 +43,9 @@
         </dd>
     </dl>
     
-    <form asp-action="Delete">
+    <form asp-action="Hapus">
         <input type="hidden" asp-for="IdPeminjaman" />
         <input type="submit" value="Delete" class="btn btn-default" /> |
-        <a asp-action="Index">Back to List</a>
+        <a asp-action="Index">Kembali</a>
     </form>
 </div>
