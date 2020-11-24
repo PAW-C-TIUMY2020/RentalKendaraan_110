@@ -19,10 +19,71 @@ namespace RentalKendaraan_110.Controllers
         }
 
         // GET: Customers
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string ktsd, string searchString, string sortOrder, string currentFilter, int? pageNumber)
         {
-            var rental_KendaraanContext = _context.Customer.Include(c => c.IdGenderNavigation);
-            return View(await rental_KendaraanContext.ToListAsync());
+            //buat list menyimpan ketersediaan
+            var ktsdList = new List<string>();
+            //Query mengambil data
+            var ktsdQuery = from d in _context.Customer orderby d.IdGender.ToString() select d.IdGender.ToString();
+
+            ktsdList.AddRange(ktsdQuery.Distinct());
+
+            //untuk menampilkan di view
+            ViewBag.ktsd = new SelectList(ktsdList);
+
+            //panggil db context
+            var menu = from m in _context.Customer.Include(k => k.IdGenderNavigation) select m;
+
+            //untuk memilih dropdownlist ketersediaan
+            if (!string.IsNullOrEmpty(ktsd))
+            {
+                menu = menu.Where(x => x.IdGender.ToString() == ktsd);
+            }
+
+            //untuk search data
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                menu = menu.Where(s => s.Alamat.Contains(searchString) || s.NamaCustomer.Contains(searchString)
+                || s.IdGender.ToString().Contains(searchString) || s.Nik.Contains(searchString) || s.NoHp.Contains(searchString));
+            }
+
+            //untuk sorting
+            ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+            ViewData["DateSortParm"] = sortOrder == "Date" ? "date_desc" : "Date";
+
+            switch (sortOrder)
+            {
+                case "name_desc":
+                    menu = menu.OrderByDescending(s => s.NamaCustomer);
+                    break;
+                case "Date":
+                    menu = menu.OrderBy(s => s.IdGenderNavigation.NamaGender);
+                    break;
+                case "date_desc":
+                    menu = menu.OrderByDescending(s => s.IdGenderNavigation.NamaGender);
+                    break;
+                default:
+                    menu = menu.OrderBy(s => s.NamaCustomer);
+                    break;
+            }
+
+            //membuat pagedList
+            ViewData["CurrentSort"] = sortOrder;
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+
+            ViewData["CurrentFilter"] = searchString;
+
+            //definisi jumlah data pada halaman
+            int pageSize = 5;
+
+            return View(await PaginatedList<Customer>.CreateAsync(menu.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
         // GET: Customers/Details/5
@@ -47,7 +108,7 @@ namespace RentalKendaraan_110.Controllers
         // GET: Customers/Create
         public IActionResult Create()
         {
-            ViewData["IdGender"] = new SelectList(_context.Gender, "IdGender", "IdGender");
+            ViewData["IdGender"] = new SelectList(_context.Gender, "IdGender", "NamaGender");
             return View();
         }
 
@@ -56,7 +117,7 @@ namespace RentalKendaraan_110.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("IdCustomer,NamaCustomer,Nik,Alamat,NoHp,IdGender")] Customer customer)
+        public async Task<IActionResult> Create([Bind("IdCustomer,NamaCustomer,Nik,Alamat,NoHp,NamaGender")] Customer customer)
         {
             if (ModelState.IsValid)
             {
@@ -64,7 +125,7 @@ namespace RentalKendaraan_110.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["IdGender"] = new SelectList(_context.Gender, "IdGender", "IdGender", customer.IdGender);
+            ViewData["IdGender"] = new SelectList(_context.Gender, "IdGender", "NamaGender", customer.IdGender);
             return View(customer);
         }
 
@@ -81,7 +142,7 @@ namespace RentalKendaraan_110.Controllers
             {
                 return NotFound();
             }
-            ViewData["IdGender"] = new SelectList(_context.Gender, "IdGender", "IdGender", customer.IdGender);
+            ViewData["IdGender"] = new SelectList(_context.Gender, "IdGender", "NamaGender", customer.IdGender);
             return View(customer);
         }
 
@@ -90,7 +151,7 @@ namespace RentalKendaraan_110.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("IdCustomer,NamaCustomer,Nik,Alamat,NoHp,IdGender")] Customer customer)
+        public async Task<IActionResult> Edit(int id, [Bind("IdCustomer,NamaCustomer,Nik,Alamat,NoHp,NamaGender")] Customer customer)
         {
             if (id != customer.IdCustomer)
             {
@@ -117,7 +178,7 @@ namespace RentalKendaraan_110.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["IdGender"] = new SelectList(_context.Gender, "IdGender", "IdGender", customer.IdGender);
+            ViewData["IdGender"] = new SelectList(_context.Gender, "IdGender", "NamaGender", customer.IdGender);
             return View(customer);
         }
 
